@@ -1,3 +1,6 @@
+#include <sys/time.h>
+#include <iostream>
+#include <fstream>
 #include <set>
 #include <string>
 #include "util.hpp"
@@ -32,7 +35,7 @@ Graph generate_graph(int n, int m)
 }
 
 
-Graph generate_example ()
+Graph generate_example()
 {
   Graph g = Graph(6);
   vector<Pair> edges = {
@@ -50,10 +53,38 @@ Graph generate_example ()
   return g;
 }
 
-
-int main ()
+void read_graph_data(Graph &g)
 {
-  //Graph g = generate_graph(50, 500);
-  Graph g = generate_example();
-  g.path_sampler(1000000);
+  const int nodes = 400727;
+  vector<Pair> es;
+  ifstream ifs("/home/udon/workspace/SNAP/amazon0312.txt");
+  string s;
+  g.set_n(nodes);
+  for(int i = 0; i < 4; ++i)
+    getline(ifs, s);
+
+  int src, dst;
+  while(ifs >> src >> dst) {
+    es.push_back(make_pair(src, dst));
+  }
+  g.add_edges(es);
+}
+
+double get_dtime(){
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  return ((double)(tv.tv_sec) + (double)(tv.tv_usec) * 0.001 * 0.001);
+}
+
+int main()
+{
+  //Graph g = generate_graph(400000, 3000000);
+  //Graph g = generate_example();
+  Graph g;
+  double t1, t2;
+  read_graph_data(g);
+  t1 = get_dtime();
+  g.path_sampler(200000);
+  t2 = get_dtime();
+  printf("%.10lf s\n", t2-t1);
 }

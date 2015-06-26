@@ -10,10 +10,10 @@ double rand_r()
   return dist(rng);
 }
 
-int rand_n(int n)
+ll rand_n(ll n)
 {
-  assert(n > 1);
+  assert(n > 1LL);
   static mt19937 rng;
-  uniform_int_distribution<int> dist(0, n-1);
+  uniform_int_distribution<ll> dist(0, n-1);
   return dist(rng);
 }

@@ -3,7 +3,9 @@
 #include <vector>
 #include <tuple>
 #include <set>
+#include <unordered_set>
 #include <cassert>
+#include <boost/functional/hash.hpp>
 #include "util.hpp"
 using namespace std;
 
@@ -23,7 +25,8 @@ struct Edge {
 
 
 typedef std::vector<Edge> Edges;
-typedef std::tuple<int, int, int> path3;
+typedef std::vector<Pair> Adjs; // (degree, id) list
+typedef std::tuple<int, int, int, int> path;
 
 
 struct Graph {
@@ -33,20 +36,22 @@ private:
   void add_edge(Edge );
   void calcProb();
 public:
-  vector<Edges> adj;
+  vector<Adjs> adj;
   Edges edges;
-  std::set<Pair> has_edge;
+  std::unordered_set<Pair, boost::hash< std::pair<int, int>>> has_edge;
 
-  int W;
-  vector<int> acc_tau;
+  ll W;
+  vector<ll> acc_tau;
 
   Graph(int );
+  Graph() {};
+  void set_n(int );
   int get_size();
   void add_edges(vector<Pair> );
 
   void show(string );
-  path3 sample();
-  Motif judge_induced(path3 );
+  path sample();
+  Motif judge_induced(path );
   void sample_debug_test(int );
   void path_sampler(int );
 };
