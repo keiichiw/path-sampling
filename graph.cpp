@@ -1,3 +1,4 @@
+#include <iostream>
 #include <cstdio>
 #include <algorithm>
 #include "util.hpp"
@@ -21,19 +22,29 @@ Graph::Graph(int n) : N(n)
   tau_set = false;
 }
 
-void Graph::add_edge(int a, int b)
+void Graph::add_edges(vector<Pair> es)
 {
-  if (a > b)
-    swap(a, b);
-  assert(b < N);
-  assert(a != b);
-  Edge e = Edge(edges.size(), a, b);
+  int e_id = edges.size();
+  for(auto p: es) {
+    int a = p.first, b = p.second;
+    if (a > b)
+      swap(a, b);
+    assert(a != b && 0 <= a && b < N);
+    Edge e = Edge(e_id++, a, b);
+    add_edge(e);
+  }
+  tau_set = false;
+}
+
+void Graph::add_edge(Edge e)
+{
   e.show();
   adj[e.u].push_back(e);
   adj[e.v].push_back(e);
   edges.push_back(e);
-  tau_set = false;
+  has_edge.insert(make_pair(e.u, e.v));
 }
+
 int Graph::get_size() {return N;}
 
 void Graph::show(string name)
@@ -93,6 +104,50 @@ path3 Graph::sample()
   return path3(tu.id, uv.id, vw.id);
 }
 
+Motif Graph::judge_induced(path3 p)
+{
+  const vector<int> MOTIFS[6] = {
+    {1, 1, 1, 3}, {1, 1, 2, 2},{1, 2, 2, 3},
+    {2, 2, 2, 2}, {2, 2, 3, 3},{3, 3, 3, 3}
+  };
+
+  Edge tu = edges[get<0>(p)];
+  Edge uv = edges[get<1>(p)];
+  Edge vw = edges[get<2>(p)];
+  int vs[4];
+  vs[1] = uv.u;  // u
+  vs[2] = uv.v;  // v
+  vs[0] = tu.u != vs[1] ? tu.u : tu.v; // t
+  vs[3] = vw.u != vs[2] ? vw.u : vw.v; // w
+  if (vs[0] == vs[3]) {
+    return Triangle;
+  }
+  vector<int> degs = vector<int>(4, 0);
+
+  for (int i = 0; i < 3; ++i) {
+    for (int j = i+1; j < 4; ++j) {
+      int a = min(vs[i], vs[j]);
+      int b = max(vs[i], vs[j]);
+      if (has_edge.find(make_pair(a, b)) != has_edge.end()) {
+        degs[i] += 1;
+        degs[j] += 1;
+      }
+    }
+  }
+
+  sort(degs.begin(), degs.end());
+
+  for (int i = 0; i < 6; ++i) {
+    if (degs == MOTIFS[i]) {
+      return (Motif) i;
+    }
+  }
+
+  assert(false);
+
+}
+
+
 void Graph::sample_debug_test(int n) {
 
   vector<int> test(edges.size(), 0);
@@ -116,5 +171,37 @@ void Graph::sample_debug_test(int n) {
     maxd = max(maxd, abs(exp -real));
   }
   D("max d = %.10lf\n", maxd);
+
+}
+
+void Graph::path_sampler(int k) {
+  const int A2[6] = {0, 1, 2, 4, 6, 12};
+  int count[6] = {0};
+
+  for (int i = 0; i < k; ++i) {
+    auto path = sample();
+    Motif m = judge_induced(path);
+    if (m == Triangle) {
+      continue;
+    }
+    count[(int)m] += 1;
+  }
+
+  double c[6] = {0};
+  for (int i = 1; i < 6; ++i) {
+    c[i] = ((double)count[i] / (double)k) * ((double) W / (double) A2[i]);
+  }
+  int n1 = 0;
+
+  for (unsigned i = 0; i < adj.size(); ++i) {
+    int d = adj[i].size();
+    n1 += (d * (d-1) * (d-2)) / 6;
+  }
+  c[0] = (double)n1 - c[2] - 2*c[4] - 4*c[5];
+
+  for(int i = 0; i < 6; ++i) {
+    cout << c[i] << " ";
+  }
+  cout<<endl;
 
 }
