@@ -1,7 +1,6 @@
 #include <iostream>
 #include <cstdio>
 #include <algorithm>
-#include "util.hpp"
 #include "graph.hpp"
 using namespace std;
 
@@ -19,6 +18,8 @@ void Edge::show()
 Graph::Graph(int n) : N(n)
 {
   adj = vector<Adjs>(N);
+  random_device seed_gen;
+  mt_engine = mt19937(seed_gen());
 }
 
 void Graph::set_n(int n)
@@ -45,7 +46,6 @@ void Graph::add_edges(vector<Pair> es)
 
 void Graph::add_edge(Edge e)
 {
-  //e.show();
   adj[e.u].push_back(make_pair(-1, e.v));
   adj[e.v].push_back(make_pair(-1, e.u));
   edges.push_back(e);
@@ -73,14 +73,15 @@ void Graph::preprocess_3path()
 
   // for 3-path-sample
   W = 0;
-  acc_tau = vector<ll>(edges.size());
+  auto taus = vector<int>(edges.size());
   for (unsigned i = 0; i < edges.size(); ++i) {
     int d1 = adj[edges[i].u].size();
     int d2 = adj[edges[i].v].size();
     int tau = (d1 - 1) * (d2 - 1);
-    acc_tau[i] = W;
+    taus[i] = tau;
     W += tau;
   }
+  tau_dist = disc_dist_t(taus.begin(), taus.end());
   D("W=%lld\n", W);
   return;
 }
@@ -90,7 +91,7 @@ void Graph::preprocess_centered()
 
   // for centered-3-path-sample
   L = 0;
-  acc_lambda = vector<ll>(edges.size());
+  auto lambdas = vector<int>(edges.size());
   uppers = vector<pair<EIter, EIter>>(edges.size());
   for (unsigned i = 0; i < edges.size(); ++i) {
     int u = edges[i].u, v = edges[i].v;
@@ -99,17 +100,18 @@ void Graph::preprocess_centered()
     auto p2 = upper_bound(adj[v].begin(), adj[v].end(), make_pair(d1, u));
     int l1 = adj[u].end() - p1;
     int l2 = adj[v].end() - p2;
-    acc_lambda[i] = L;
-    L += l1 * l2;
+    int lambda = l1 * l2;
+    lambdas[i] = lambda;
+    L += lambda;
     uppers[i] = make_pair(p1, p2);
   }
+  lambda_dist = disc_dist_t(lambdas.begin(), lambdas.end());
   D("L=%lld\n", L);
 }
 
-path Graph::sample()
+path_t Graph::sample()
 {
-  ll r = rand_n(W);
-  int uv_i = upper_bound(acc_tau.begin(), acc_tau.end(), r) - acc_tau.begin() - 1;
+  int uv_i = tau_dist(mt_engine);
   assert(0 <= uv_i && uv_i < (int)edges.size());
   Edge uv = edges[uv_i];
 
@@ -118,7 +120,7 @@ path Graph::sample()
   int t, w;
 
   while(1) {
-    r = rand_n(adj[uv.u].size());
+    int r = mt_engine() % adj[uv.u].size();
     t = adj[uv.u][r].second;
     if(t != uv.v) {// tu != uv
       break;
@@ -126,20 +128,19 @@ path Graph::sample()
   }
 
   while(1) {
-    r = rand_n(adj[uv.v].size());
+    int r = mt_engine() % adj[uv.v].size();
     w = adj[uv.v][r].second;
     if(uv.u != w) {
       break;
     }
   }
 
-  return path(t, uv.u, uv.v, w);
+  return path_t(t, uv.u, uv.v, w);
 }
 
-path Graph::sample_centered()
+path_t Graph::sample_centered()
 {
-  ll r = rand_n(L);
-  int uv_i = upper_bound(acc_lambda.begin(), acc_lambda.end(), r) - acc_lambda.begin() - 1;
+  int uv_i = lambda_dist(mt_engine);
 
   assert(0 <= uv_i && uv_i < (int)edges.size());
 
@@ -156,7 +157,7 @@ path Graph::sample_centered()
   int t, w;
 
   while(1) {
-    r = rand_n(l1);
+    int r = mt_engine() % l1;
     t = (*(p1 + r)).second;
     if(t != uv.v) {// tu != uv
       break;
@@ -164,18 +165,18 @@ path Graph::sample_centered()
   }
 
   while(1) {
-    r = rand_n(l2);
+    int r = mt_engine() % l2;
     w = (*(p2 + r)).second;
     if(uv.u != w) {
       break;
     }
   }
 
-  return path(t, uv.u, uv.v, w);
+  return path_t(t, uv.u, uv.v, w);
 
 }
 
-Motif Graph::judge_induced(path p)
+Motif Graph::judge_induced(path_t p)
 {
 
   const vector<int> MOTIFS[6] = {
@@ -216,39 +217,11 @@ Motif Graph::judge_induced(path p)
 }
 
 
-void Graph::sample_debug_test(int n)
-{
-
-  vector<int> test(edges.size(), 0);
-
-  for(int i = 0; i < n; ++i) {
-    int idx = get<1>(sample());
-    test[idx] += 1;
-  }
-
-  assert(edges.size() == acc_tau.size());
-
-  double maxd = -1;
-
-  for (unsigned i = 0; i < edges.size(); ++i) {
-    int tau = (i==edges.size()-1) ? W-acc_tau[i] : acc_tau[i+1] - acc_tau[i];
-
-    double exp = (double) tau / (double) W;
-    double real = (double) test[i] / (double) n;
-
-    D("%d: exp %lf %%, real %lf %%\n", i, exp, real);
-    maxd = max(maxd, abs(exp -real));
-  }
-  D("max d = %.10lf\n", maxd);
-
-}
-
+// call after preprocess_3path
 void Graph::path_sampler(int k)
 {
   const int A2[6] = {0, 1, 2, 4, 6, 12};
   ll count[6] = {0};
-
-  preprocess_3path();
 
   for (int i = 0; i < k; ++i) {
     auto path = sample();
@@ -271,14 +244,12 @@ void Graph::path_sampler(int k)
   }
   c[0] = (double)n1 - c[2] - 2*c[4] - 4*c[5];
 
-  for(int i = 0; i < 6; ++i) {
-    cout << i << ": " << c[i] << ", ";
-  }
-  cout<<endl;
+  printf("0: %.3e, 1: %.3e, 2:%.3e\n", c[0], c[1], c[2]);
+  printf("3: %.3e, 4: %.3e, 5:%.3e\n", c[3], c[4], c[5]);
 
 }
 
-bool Graph::is_centered(path p)
+bool Graph::is_centered(path_t p)
 {
   int t = get<0>(p);
   int w = get<3>(p);
@@ -290,19 +261,17 @@ bool Graph::is_centered(path p)
     swap(t, w);
 
   return has_edge.find(make_pair(t, w)) != has_edge.end();
-
 }
 
+
+// call after preprocess_centered()
 void Graph::centered_sampler(int k)
 {
   const int B[3] = {1, 1, 3};
   ll count[3] = {0};
 
-  // preprocess
-  preprocess_centered();
-
   for (int i = 0; i < k; ++i) {
-    auto path = sample_centered();
+    auto path= sample_centered();
 
     if (!is_centered(path)) {
       continue;
@@ -318,9 +287,6 @@ void Graph::centered_sampler(int k)
     c[i] = ((double)count[i] / (double)k) * ((double) L / (double) B[i]);
   }
 
-  for(int i = 0; i < 3; ++i) {
-    cout << i + 3 << ": " << c[i] << ", ";
-  }
-  cout<<endl;
+  printf("3: %.3e, 4: %.3e, 5:%.3e\n", c[0], c[1], c[2]);
 
 }

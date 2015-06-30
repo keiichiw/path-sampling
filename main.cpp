@@ -3,37 +3,9 @@
 #include <fstream>
 #include <set>
 #include <string>
-#include "util.hpp"
 #include "graph.hpp"
 
 using namespace std;
-
-Graph generate_random_graph(int n, int m)
-{
-  Graph g = Graph(n);
-  set <Pair> st;
-  vector<Pair> edges;
-
-  for (int i = 0; i < m; ++i) {
-    int a = rand_n(n);
-    int b = rand_n(n);
-    if (a > b) {
-      swap(a, b);
-    }
-    if (a == b ||
-        st.find(make_pair(a, b)) != st.end()) {
-      --i;
-      continue;
-    }
-    edges.push_back(make_pair(a, b));
-    st.insert(make_pair(a, b));
-  }
-
-  g.add_edges(edges);
-
-  return g;
-}
-
 
 Graph generate_example()
 {
@@ -48,22 +20,6 @@ Graph generate_example()
     make_pair(3, 4),
     make_pair(4, 5)
   };
-  g.add_edges(edges);
-
-  return g;
-}
-
-Graph generate_clique()
-{
-  Graph g = Graph(6);
-  vector<Pair> edges;
-
-  for (int i = 0; i < 3; ++i) {
-    for (int j = i + 1; j < 4; ++j) {
-      edges.push_back(make_pair(i, j));
-    }
-  }
-
   g.add_edges(edges);
 
   return g;
@@ -94,33 +50,57 @@ double get_dtime(){
   return ((double)(tv.tv_sec) + (double)(tv.tv_usec) * 0.001 * 0.001);
 }
 
+const string data_sets[] = {
+  "./data/amazon0312.txt",
+  "./data/web-Google.txt",
+};
+
+const int node_count[] = {
+  410000, 920000
+};
+
+
 int main()
 {
 
-  const int TIMES = 200000;
+  const int SAMPLE_K = 200000;
   const int TEST_NUM = 10;
   Graph g;
+  int data_id = 0; // change
 
-  read_graph_data(g, "/home/udon/workspace/SNAP/web-Google.txt", 920000);
-  //read_graph_data(g, "/home/udon/workspace/SNAP/amazon0312.txt", 400000);
+  read_graph_data(g, data_sets[data_id], node_count[data_id]);
+
+  printf("%s\n", data_sets[data_id].c_str());
+
 
   double time1 = 0.0, time2 = 0.0;
 
   for (int i = 0; i < TEST_NUM; ++i) {
-    double t1, t2, t3;
+    double t0, t1, t2;
     Graph g1 = g;
+    printf("Test %d------------\n", i);
+    t0 = get_dtime();
+
+    // 3path-sampler
+    g1.preprocess_3path();
+    g1.path_sampler(SAMPLE_K);
+
     t1 = get_dtime();
-    g1.path_sampler(TIMES);
+
+    // centered-sampler
+    g1.preprocess_centered();
+    g1.centered_sampler(SAMPLE_K);
+
     t2 = get_dtime();
-    g1.centered_sampler(TIMES);
-    t3 = get_dtime();
-    time1 += t2 - t1;
-    time2 += t3 - t2;
+
+    time1 += t1 - t0;
+    time2 += t2 - t1;
   }
   time1 /= TEST_NUM;
   time2 /= TEST_NUM;
-
-  printf("3path-sampler(k=%d): %lfs\n", TIMES, time1);
-  printf("centered-sampler(k=%d): %lf s\n", TIMES, time2);
+  printf("-----------------\n");
+  printf("Data: %s (k = %d)\n", data_sets[data_id].c_str(), SAMPLE_K);
+  printf("3path-sampler:    %lfs\n", time1);
+  printf("centered-sampler: %lfs\n", time2);
 
 }
