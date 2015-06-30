@@ -12,7 +12,7 @@ double rand_r()
 
 ll rand_n(ll n)
 {
-  assert(n > 1LL);
+  assert(n > 0LL);
   static mt19937 rng;
   uniform_int_distribution<ll> dist(0, n-1);
   return dist(rng);

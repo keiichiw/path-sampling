@@ -24,17 +24,16 @@ struct Edge {
 };
 
 
-typedef std::vector<Edge> Edges;
-typedef std::vector<Pair> Adjs; // (degree, id) list
-typedef std::tuple<int, int, int, int> path;
-
+typedef vector<Edge> Edges;
+typedef vector<Pair> Adjs; // (degree, id) list
+typedef tuple<int, int, int, int> path;
+typedef Adjs::iterator EIter;
 
 struct Graph {
 private:
   int N;
-  bool tau_set;
   void add_edge(Edge );
-  void calcProb();
+  void preprocess();
 public:
   vector<Adjs> adj;
   Edges edges;
@@ -42,6 +41,15 @@ public:
 
   ll W;
   vector<ll> acc_tau;
+  ll L;
+  vector<ll> acc_lambda;
+
+  /*
+    edges[i] = (u, v), uppers[i] = (p1, p2)ならば、
+    *p1 はadj[u]の要素のうち、v < *p1を満たす最小のもの
+    *p2 はadj[v]の要素のうち、u < *p2を満たす最小のもの
+   */
+  vector<pair<EIter, EIter>> uppers;
 
   Graph(int );
   Graph() {};
@@ -50,10 +58,15 @@ public:
   void add_edges(vector<Pair> );
 
   void show(string );
-  path sample();
   Motif judge_induced(path );
   void sample_debug_test(int );
+
+  path sample();
   void path_sampler(int );
+
+  path sample_centered();
+  bool is_centered(path );
+  void centered_sampler(int );
 };
 
 #endif

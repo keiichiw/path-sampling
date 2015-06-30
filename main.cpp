@@ -53,11 +53,29 @@ Graph generate_example()
   return g;
 }
 
+Graph generate_clique()
+{
+  Graph g = Graph(6);
+  vector<Pair> edges;
+
+  for (int i = 0; i < 3; ++i) {
+    for (int j = i + 1; j < 4; ++j) {
+      edges.push_back(make_pair(i, j));
+    }
+  }
+
+  g.add_edges(edges);
+
+  return g;
+}
+
 void read_graph_data(Graph &g)
 {
-  const int nodes = 400727;
+  //const int nodes = 400727;
+  const int nodes = 916428;
   vector<Pair> es;
-  ifstream ifs("/home/udon/workspace/SNAP/amazon0312.txt");
+  //ifstream ifs("/home/udon/workspace/SNAP/amazon0312.txt");
+  ifstream ifs("/home/udon/workspace/SNAP/web-Google.txt");
   string s;
   g.set_n(nodes);
   for(int i = 0; i < 4; ++i)
@@ -78,13 +96,17 @@ double get_dtime(){
 
 int main()
 {
-  //Graph g = generate_graph(400000, 3000000);
-  //Graph g = generate_example();
+
+  const int TIMES = 200000;
   Graph g;
   double t1, t2;
   read_graph_data(g);
+  //g = generate_graph(400000, 3000000);
+  //g = generate_example();
   t1 = get_dtime();
-  g.path_sampler(200000);
+  g.path_sampler(TIMES);
+  g.centered_sampler(TIMES);
   t2 = get_dtime();
   printf("%.10lf s\n", t2-t1);
+
 }
