@@ -41,7 +41,6 @@ void Graph::add_edges(vector<Pair> es)
     Edge e = Edge(e_id++, a, b);
     add_edge(e);
   }
-  preprocess();
 }
 
 void Graph::add_edge(Edge e)
@@ -53,8 +52,6 @@ void Graph::add_edge(Edge e)
   has_edge.insert(make_pair(e.u, e.v));
 }
 
-int Graph::get_size() {return N;}
-
 void Graph::show(string name)
 {
   printf("graph %s {\n", name.c_str());
@@ -64,9 +61,8 @@ void Graph::show(string name)
   printf("}\n");
 }
 
-void Graph::preprocess()
+void Graph::preprocess_3path()
 {
-
   for (unsigned i = 0; i < adj.size(); ++i) {
     for (unsigned j = 0; j < adj[i].size(); ++j) {
       int to = adj[i][j].second;
@@ -74,7 +70,6 @@ void Graph::preprocess()
     }
     sort(adj[i].begin(), adj[i].end());
   }
-
 
   // for 3-path-sample
   W = 0;
@@ -87,6 +82,11 @@ void Graph::preprocess()
     W += tau;
   }
   D("W=%lld\n", W);
+  return;
+}
+
+void Graph::preprocess_centered()
+{
 
   // for centered-3-path-sample
   L = 0;
@@ -104,7 +104,6 @@ void Graph::preprocess()
     uppers[i] = make_pair(p1, p2);
   }
   D("L=%lld\n", L);
-
 }
 
 path Graph::sample()
@@ -249,6 +248,8 @@ void Graph::path_sampler(int k)
   const int A2[6] = {0, 1, 2, 4, 6, 12};
   ll count[6] = {0};
 
+  preprocess_3path();
+
   for (int i = 0; i < k; ++i) {
     auto path = sample();
     Motif m = judge_induced(path);
@@ -296,6 +297,9 @@ void Graph::centered_sampler(int k)
 {
   const int B[3] = {1, 1, 3};
   ll count[3] = {0};
+
+  // preprocess
+  preprocess_centered();
 
   for (int i = 0; i < k; ++i) {
     auto path = sample_centered();

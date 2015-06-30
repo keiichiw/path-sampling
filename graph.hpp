@@ -29,20 +29,15 @@ typedef vector<Pair> Adjs; // (degree, id) list
 typedef tuple<int, int, int, int> path;
 typedef Adjs::iterator EIter;
 
-struct Graph {
+class Graph {
+
 private:
   int N;
-  void add_edge(Edge );
-  void preprocess();
-public:
   vector<Adjs> adj;
   Edges edges;
   std::unordered_set<Pair, boost::hash< std::pair<int, int>>> has_edge;
-
-  ll W;
-  vector<ll> acc_tau;
-  ll L;
-  vector<ll> acc_lambda;
+  ll W; vector<ll> acc_tau;
+  ll L; vector<ll> acc_lambda;
 
   /*
     edges[i] = (u, v), uppers[i] = (p1, p2)ならば、
@@ -51,21 +46,25 @@ public:
    */
   vector<pair<EIter, EIter>> uppers;
 
+  void add_edge(Edge );
+  void preprocess_3path();
+  void preprocess_centered();
+  Motif judge_induced(path );
+  bool is_centered(path );
+
+public:
   Graph(int );
   Graph() {};
-  void set_n(int );
-  int get_size();
-  void add_edges(vector<Pair> );
 
+  void set_n(int );
+  void add_edges(vector<Pair> );
   void show(string );
-  Motif judge_induced(path );
   void sample_debug_test(int );
 
   path sample();
   void path_sampler(int );
 
   path sample_centered();
-  bool is_centered(path );
   void centered_sampler(int );
 };
 

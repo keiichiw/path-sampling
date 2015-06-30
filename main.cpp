@@ -8,7 +8,7 @@
 
 using namespace std;
 
-Graph generate_graph(int n, int m)
+Graph generate_random_graph(int n, int m)
 {
   Graph g = Graph(n);
   set <Pair> st;
@@ -69,21 +69,21 @@ Graph generate_clique()
   return g;
 }
 
-void read_graph_data(Graph &g)
+void read_graph_data(Graph &g, string fname, int nodes)
 {
-  //const int nodes = 400727;
-  const int nodes = 916428;
   vector<Pair> es;
-  //ifstream ifs("/home/udon/workspace/SNAP/amazon0312.txt");
-  ifstream ifs("/home/udon/workspace/SNAP/web-Google.txt");
+  ifstream ifs(fname);
   string s;
   g.set_n(nodes);
-  for(int i = 0; i < 4; ++i)
+
+  for(int i = 0; i < 4; ++i) // ignore comments
     getline(ifs, s);
 
   int src, dst;
+  int cnt = 0;
   while(ifs >> src >> dst) {
     es.push_back(make_pair(src, dst));
+    cnt++;
   }
   g.add_edges(es);
 }
@@ -98,15 +98,29 @@ int main()
 {
 
   const int TIMES = 200000;
+  const int TEST_NUM = 10;
   Graph g;
-  double t1, t2;
-  read_graph_data(g);
-  //g = generate_graph(400000, 3000000);
-  //g = generate_example();
-  t1 = get_dtime();
-  g.path_sampler(TIMES);
-  g.centered_sampler(TIMES);
-  t2 = get_dtime();
-  printf("%.10lf s\n", t2-t1);
+
+  read_graph_data(g, "/home/udon/workspace/SNAP/web-Google.txt", 920000);
+  //read_graph_data(g, "/home/udon/workspace/SNAP/amazon0312.txt", 400000);
+
+  double time1 = 0.0, time2 = 0.0;
+
+  for (int i = 0; i < TEST_NUM; ++i) {
+    double t1, t2, t3;
+    Graph g1 = g;
+    t1 = get_dtime();
+    g1.path_sampler(TIMES);
+    t2 = get_dtime();
+    g1.centered_sampler(TIMES);
+    t3 = get_dtime();
+    time1 += t2 - t1;
+    time2 += t3 - t2;
+  }
+  time1 /= TEST_NUM;
+  time2 /= TEST_NUM;
+
+  printf("3path-sampler(k=%d): %lfs\n", TIMES, time1);
+  printf("centered-sampler(k=%d): %lf s\n", TIMES, time2);
 
 }
