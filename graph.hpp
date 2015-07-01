@@ -50,8 +50,6 @@ private:
   ll L;
   disc_dist_t lambda_dist;
 
-  mt19937 mt_engine;
-
   vector<pair<EIter, EIter>> uppers;
 
   void add_edge(Edge );
@@ -60,6 +58,7 @@ private:
   bool is_centered(path_t );
 
 public:
+  mt19937 mt_engine;
   Graph(int );
   Graph() {};
   void preprocess_3path();

@@ -38,6 +38,8 @@ void read_graph_data(Graph &g, string fname, int nodes)
   int src, dst;
   int cnt = 0;
   while(ifs >> src >> dst) {
+    if (src == dst)
+      continue;
     es.push_back(make_pair(src, dst));
     cnt++;
   }
@@ -53,10 +55,11 @@ double get_dtime(){
 const string data_sets[] = {
   "./data/amazon0312.txt",
   "./data/web-Google.txt",
+  "./data/cit-Patents.txt"
 };
 
 const int node_count[] = {
-  410000, 920000
+  410000, 920000, 10000000
 };
 
 
@@ -78,6 +81,8 @@ int main()
   for (int i = 0; i < TEST_NUM; ++i) {
     double t0, t1, t2;
     Graph g1 = g;
+    random_device seed_gen;
+    g1.mt_engine = mt19937(seed_gen());
     printf("Test %d------------\n", i);
     t0 = get_dtime();
 

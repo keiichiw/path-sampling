@@ -1,5 +1,5 @@
 CC=g++
-FLGS=-Wall -Wextra -g -O3 -std=c++11 -DNDEBUG
+FLGS=-Wall -Wextra -g -O3 -std=c++11 #-DNDEBUG
 OBJS=graph.o
 TARGET=main
 all: $(TARGET)

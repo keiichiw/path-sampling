@@ -35,7 +35,12 @@ void Graph::add_edges(vector<Pair> es)
     int a = p.first, b = p.second;
     if (a > b)
       swap(a, b);
-    assert(a != b && 0 <= a && b < N);
+
+    if (!(a != b && 0 <= a && b < N)) {
+      D("N = %d (a, b) = (%d, %d)\n", N, a, b);
+      assert(false);
+    }
+
     if (has_edge.find(make_pair(a, b)) != has_edge.end()) {
       continue;
     }
@@ -63,13 +68,6 @@ void Graph::show(string name)
 
 void Graph::preprocess_3path()
 {
-  for (unsigned i = 0; i < adj.size(); ++i) {
-    for (unsigned j = 0; j < adj[i].size(); ++j) {
-      int to = adj[i][j].second;
-      adj[i][j].first = adj[to].size();
-    }
-    sort(adj[i].begin(), adj[i].end());
-  }
 
   // for 3-path-sample
   W = 0;
@@ -88,6 +86,14 @@ void Graph::preprocess_3path()
 
 void Graph::preprocess_centered()
 {
+
+  for (unsigned i = 0; i < adj.size(); ++i) {
+    for (unsigned j = 0; j < adj[i].size(); ++j) {
+      int to = adj[i][j].second;
+      adj[i][j].first = adj[to].size();
+    }
+    sort(adj[i].begin(), adj[i].end());
+  }
 
   // for centered-3-path-sample
   L = 0;
