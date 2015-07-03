@@ -58,6 +58,7 @@ private:
   bool is_centered(path_t );
 
 public:
+  string name;
   mt19937 mt_engine;
   Graph(int );
   Graph() {};

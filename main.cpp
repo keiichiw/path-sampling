@@ -3,45 +3,43 @@
 #include <fstream>
 #include <set>
 #include <string>
+#include <cstring>
 #include "graph.hpp"
 
 using namespace std;
 
-Graph generate_example()
-{
-  Graph g = Graph(6);
-  vector<Pair> edges = {
-    make_pair(0, 1),
-    make_pair(0, 2),
-    make_pair(0, 3),
-    make_pair(1, 2),
-    make_pair(1, 4),
-    make_pair(2, 3),
-    make_pair(3, 4),
-    make_pair(4, 5)
-  };
-  g.add_edges(edges);
-
-  return g;
-}
-
-void read_graph_data(Graph &g, string fname, int nodes)
-{
+void read_dimacs_data(Graph &g) {
   vector<Pair> es;
-  ifstream ifs(fname);
-  string s;
-  g.set_n(nodes);
+  ifstream ifs(g.name);
 
-  for(int i = 0; i < 4; ++i) // ignore comments
-    getline(ifs, s);
-
-  int src, dst;
-  int cnt = 0;
-  while(ifs >> src >> dst) {
-    if (src == dst)
-      continue;
-    es.push_back(make_pair(src, dst));
-    cnt++;
+  if (!ifs.good()) {
+    cerr << g.name << " not found" << endl;
+    exit(1);
+  }
+  string c;
+  bool flg = false;
+  while (ifs >> c) {
+    if (c == "c") {
+      string t;
+      getline(ifs, t);
+    } else if (c == "p") {
+      int v, e;
+      ifs >> c >> v >> e;
+      g.set_n(v+1);
+      flg = true;
+    } else if (c == "a") {
+      int src, dst, d;
+      if (!flg) {
+        cerr << "size is not set yet" << endl;
+        exit(1);
+      }
+      ifs >> src >> dst >> d;
+      if (src == dst)
+        continue;
+      es.push_back(make_pair(src, dst));
+    } else {
+      cerr << "dimacs input error : " << c << endl;
+    }
   }
   g.add_edges(es);
 }
@@ -52,29 +50,11 @@ double get_dtime(){
   return ((double)(tv.tv_sec) + (double)(tv.tv_usec) * 0.001 * 0.001);
 }
 
-const string data_sets[] = {
-  "./data/amazon0312.txt",
-  "./data/web-Google.txt",
-  "./data/cit-Patents.txt"
-};
 
-const int node_count[] = {
-  410000, 920000, 10000000
-};
-
-
-int main()
-{
+void time_test(Graph &g) {
 
   const int SAMPLE_K = 200000;
   const int TEST_NUM = 10;
-  Graph g;
-  int data_id = 0; // change
-
-  read_graph_data(g, data_sets[data_id], node_count[data_id]);
-
-  printf("%s\n", data_sets[data_id].c_str());
-
 
   double time1 = 0.0, time2 = 0.0;
 
@@ -89,23 +69,65 @@ int main()
     // 3path-sampler
     g1.preprocess_3path();
     g1.path_sampler(SAMPLE_K);
-
     t1 = get_dtime();
 
     // centered-sampler
     g1.preprocess_centered();
     g1.centered_sampler(SAMPLE_K);
-
     t2 = get_dtime();
 
     time1 += t1 - t0;
     time2 += t2 - t1;
   }
+
   time1 /= TEST_NUM;
   time2 /= TEST_NUM;
   printf("-----------------\n");
-  printf("Data: %s (k = %d)\n", data_sets[data_id].c_str(), SAMPLE_K);
+  printf("Data: %s (k = %d)\n", g.name.c_str(), SAMPLE_K);
   printf("3path-sampler:    %lfs\n", time1);
   printf("centered-sampler: %lfs\n", time2);
+}
+
+void run(Graph &g) {
+  const int SAMPLE_K = 200000;
+  g.preprocess_3path();
+  g.path_sampler(SAMPLE_K);
+
+  // centered-sampler
+  g.preprocess_centered();
+  g.centered_sampler(SAMPLE_K);
+
+}
+
+int main(int argc,char *argv[])
+{
+  if (!(argc == 2 ||
+        (argc == 3 && strcmp(argv[1], "-t") == 0))) {
+    cerr << "Usage: ./main [-t] <DIMACS format file>" << endl;
+    return 0;
+  }
+  Graph g;
+  bool time_flg = false;
+  if (argc == 2) {
+    g.name = string(argv[1]);
+  } else {
+    g.name = string(argv[2]);
+    time_flg = true;
+  }
+
+  int n_sz = g.name.size();
+  if (n_sz < 3 || g.name.substr(n_sz - 3) != ".gr") {
+    cerr << "filename extension must be '.gr'" << endl;
+    return 0;
+  }
+
+  read_dimacs_data(g);
+
+  if (time_flg) {
+    time_test(g);
+  } else {
+    run(g);
+  }
+
 
 }

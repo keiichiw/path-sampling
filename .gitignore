@@ -4,3 +4,5 @@ main
 *.dot
 *.png
 *.txt
+data/*.gr
+!data/example.gr
